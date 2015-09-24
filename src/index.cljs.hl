@@ -1,0 +1,75 @@
+(page "index.html")
+
+(def route (route-cell "#home"))
+
+(with-init!)
+
+(defelem top-menu-items []
+  (spliced
+    (div :href "#" :class "header item"
+         ; (img :class "logo" :src "...")
+         "Logo")
+    (a :href "#" :class "item" "Home")
+    (a :href "#" :class "ui simple dropdown item"
+       "Menu" (i :class "dropdown icon")
+       (div :class "menu"
+            (div :class "item" "Profile")
+            (div :class "divider")
+            (div :class "header" "Header item")
+            (div :class "item" "Logout")))
+
+    (div :class "right menu"
+         (div :class "item" route))))
+
+(defelem left-menu-items []
+  (spliced
+    (a :class "item" :href "#module-1" "Module 1")
+    (a :class "item" :href "#module-2" "Module 2")))
+
+(defelem module-1 [{:keys [route]}]
+  (spliced
+    (h1 :class "ui header" "Module 1"
+        (h2 :class "ui sub header"
+            (text (pr-str route))))
+    (p "This is the content of module 1")))
+
+(defelem module-2 []
+  (spliced
+    (h1 :class "ui header" "Module 2")
+    (p "This is the content of module 2")))
+
+(defn without [prefix full-path]
+  (let [parts (re-pattern (str "^#" prefix "(/(.*)|)$"))
+        [_ slash-path path] (re-matches parts full-path)]
+    (or path slash-path)))
+
+(defn under
+  [prefix route]
+  (cell= (without prefix route)))
+
+(defelem modules []
+  (spliced
+    (module-1 :route (under "module-1" route))
+    (module-2)))
+
+(html
+  (head
+    (html-meta :name "viewport"
+               :content "width=device-width, initial-scale=1.0")
+    (link :href "/semantic-ui.css" :rel "stylesheet"))
+
+  (body
+    (div :class "ui inverted menu"
+           (div :class "ui container"
+                (top-menu-items)))
+
+    (div :class "ui equal width grid container"
+         (div :class "row"
+              (div :class "column"
+                   (div :class "ui vertical inverted fluid menu"
+                        :style "border-radius: 0"
+                        (left-menu-items)))
+
+              (div :class "twelve wide column"
+                   (div :class "ui container"
+                        (modules)))))))
