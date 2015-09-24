@@ -1,5 +1,5 @@
 (set-env!
-  :project 'webapp-template
+  :project 'webapp-skeleton
   :version "0.1.0"
   :dependencies
   '[[hoplon/boot-hoplon "0.1.10"]

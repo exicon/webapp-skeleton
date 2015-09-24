@@ -4,6 +4,32 @@
 
 (with-init!)
 
+(defelem module-1 [{:keys [route route-to]}]
+  (spliced
+    ($comment "Module 1")
+    (h1 :class "ui header" "Module 1"
+        (h2 :class "ui sub header"
+            (text (str "Sub-module: " (pr-str route)))))
+    (p "This is the content of module 1")
+    (button :click #(js/console.log "something")
+            "Print something")))
+
+(defelem module-2 [{:keys [route route-to]}]
+  (spliced
+    ($comment "Module 2")
+    (h1 :class "ui header" "Module 2"
+        (h2 :class "ui sub header"
+            (text (str "Sub-module: " (pr-str route)))))
+    (p "This is the content of module 2")
+    (p (a :href (route-to "sub/module/123")
+       "Go into a sub-module"))
+    (p (a :href "#mod-1/sub/module/456"
+       "Go into another module's sub-module"))))
+
+(def menu-module-routes
+  [["Module 1" :mod-1 module-1]
+   ["Module 2" :mod-2 module-2]])
+
 (defelem top-menu-items []
   (spliced
     (div :href "#" :class "header item"
@@ -22,21 +48,14 @@
          (div :class "item" route))))
 
 (defelem left-menu-items []
-  (spliced
-    (a :class "item" :href "#module-1" "Module 1")
-    (a :class "item" :href "#module-2" "Module 2")))
-
-(defelem module-1 [{:keys [route]}]
-  (spliced
-    (h1 :class "ui header" "Module 1"
-        (h2 :class "ui sub header"
-            (text (pr-str route))))
-    (p "This is the content of module 1")))
-
-(defelem module-2 []
-  (spliced
-    (h1 :class "ui header" "Module 2")
-    (p "This is the content of module 2")))
+  ; (spliced
+  ;   (a :class "item" :href "#mod-1" "Module 1")
+  ;   (a :class "item" :href "#mod-2" "Module 2"))
+  (map (fn [[menu-label module-path make-module]]
+         (a :class "item"
+            :href (cell= (str "#" (name module-path)))
+            menu-label))
+       menu-module-routes))
 
 (defn without [prefix full-path]
   (let [parts (re-pattern (str "^#" prefix "(/(.*)|)$"))
@@ -47,10 +66,34 @@
   [prefix route]
   (cell= (without prefix route)))
 
+(defn toggle-elements
+  "Returns a cell containing an empty vector if the condition cell is false
+  otherwise it returns the vector of the provided kids
+
+  Does NOT wotk with the official Hoplon because of the `when-dom` infinite loop."
+  [condition & kids]
+  (cell= (if condition kids [])))
+
+(defn toggle-visibility
+  "Returns a kids wrapped into a container div.
+  The div's visibility is toggled based on the condition cell.
+
+  Works with official Hoplon."
+  [condition & kids]
+  (div :toggle condition kids))
+
+(defn module [make-module module-path]
+  (let [module-path-str (if (nil? module-path) "" (name module-path))
+        module-route (under module-path-str route)
+        route-to #(str "#" module-path-str "/" %)
+        module (make-module :route module-route
+                            :route-to route-to)]
+    (toggle-elements module-route module)))
+
 (defelem modules []
-  (spliced
-    (module-1 :route (under "module-1" route))
-    (module-2)))
+  (map (fn [[menu-label module-path make-module]]
+         (module make-module module-path))
+       menu-module-routes))
 
 (html
   (head
@@ -60,8 +103,8 @@
 
   (body
     (div :class "ui inverted menu"
-           (div :class "ui container"
-                (top-menu-items)))
+         (div :class "ui container"
+              (top-menu-items)))
 
     (div :class "ui equal width grid container"
          (div :class "row"
