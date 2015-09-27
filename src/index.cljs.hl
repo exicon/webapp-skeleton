@@ -30,11 +30,13 @@
           "Go into another module's sub-module"))))
 
 (def menu-module-routes
-  [["Module 1" "mod-1" module-1]
+  [["Module 1" "mod-1" module-1
+    "Sub-module 1" "sub-1"
+    "Sub-module 2" "sub-2"]
    ["Module 2" "mod-2" module-2]])
 
 (defn without [prefix full-path]
-  (let [parts (re-pattern (str "^#" prefix "(/(.*)|)$"))
+  (let [parts (re-pattern (str "^" prefix "(/(.*)|)$"))
         [_ slash-path path] (re-matches parts full-path)]
     (or path slash-path)))
 
@@ -54,6 +56,9 @@
   [condition & kids]
   (div :toggle condition kids))
 
+; Pick the default way of toggling DOM elements here:
+(def only-if toggle-visibility)
+
 (defelem top-menu-items []
   (spliced
     (div :href "#" :class "header item"
@@ -71,33 +76,41 @@
     (div :class "right menu"
          (div :class "item" route))))
 
-(defelem menu-item [{:keys [module-path] :as attrs} kids]
-  ((a :class (cell= {:active (without module-path route)}))
-   :class "item"
-   :href (cell= (str "#" module-path))
-   (dissoc attrs :module-path)
-   kids))
+(defelem menu-item [{:keys [href] :as attrs} item-content]
+  ((a :class "item" attrs)
+   :class (cell= {:active (without href route)})
+   item-content))
 
 (defelem left-menu-items []
-  ; (spliced
-  ;   (a :class "item" :href "#mod-1" "Module 1")
-  ;   (a :class "item" :href "#mod-2" "Module 2"))
-  (map (fn [[menu-label module-path make-module]]
-         (menu-item :module-path module-path
-                    menu-label))
-       menu-module-routes))
+  (let [sub-menu
+        (fn [href items]
+          (div :class "ui secondary vertical menu"
+               (loop-tpl
+                 :bindings [[sub-label sub-path]
+                            (cell= (partition 2 items))]
+                 (menu-item
+                   :href (cell= (str href "/" sub-path))
+                   sub-label))))]
+    (loop-tpl
+      :bindings [[label path mod & sub-items] menu-module-routes]
+      (let [href (cell= (str "#" path))]
+        (menu-item :href href
+                   label
+                   (only-if (cell= (and sub-items (seq sub-items)))
+                            (sub-menu href sub-items)))))))
 
 (defn module [make-module module-path]
-  (let [module-route (cell= (without module-path route))
-        route-to #(str "#" module-path "/" %)
-        module (make-module :route module-route
-                            :route-to route-to)]
-    (toggle-elements module-route module)))
+  (let [module-href (cell= (str "#" module-path))
+        module-route (cell= (without module-href route))
+        route-to #(str @module-href "/" %)
+        module (@make-module :route module-route
+                             :route-to route-to)]
+    (only-if module-route module)))
 
 (defelem modules []
-  (map (fn [[menu-label module-path make-module]]
-         (module make-module module-path))
-       menu-module-routes))
+  (loop-tpl
+    :bindings [[label path mod] menu-module-routes]
+    (module mod path)))
 
 (html
   (head
