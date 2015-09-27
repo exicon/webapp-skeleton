@@ -21,6 +21,9 @@
         (h2 :class "ui sub header"
             (text (str "Sub-module: " (pr-str route)))))
     (p "This is the content of module 2")
+    (example "This number comes from a macro, which is" (br)
+       "automatically included into every .hl file: "
+       (macro-test))
     (p (a :href (route-to "sub/module/123")
           "Go into a sub-module"))
     (p (a :href "#mod-1/sub/module/456"

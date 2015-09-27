@@ -31,7 +31,7 @@
     (from-cljsjs :profile :development)
     (sift :move {#"^semantic-ui.inc.css$" "semantic-ui.css"})
     (watch)
-    (hoplon :pretty-print true)
+    (hoplon :pretty-print true :refers '#{hoplon.ext})
     (reload)
     (cljs :optimizations :none
           :source-map true)
